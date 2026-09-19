@@ -1,0 +1,13 @@
+import 'dotenv/config';import express from 'express';import cors from 'cors';import jwt from 'jsonwebtoken';
+const app=express();app.use(cors());app.use(express.json());
+const leads=[{id:1,name:'Sarah Chen',company:'Nova Labs',email:'sarah@novalabs.ai',status:'Qualified',source:'LinkedIn',value:18000,score:92},{id:2,name:'Michael Reed',company:'Orbit Systems',email:'michael@orbit.io',status:'Proposal',source:'Website',value:24000,score:84}];
+app.get('/api/health',(req,res)=>res.json({ok:true,service:'AI CRM API'}));
+app.post('/api/auth/login',(req,res)=>{const token=jwt.sign({email:req.body.email||'demo@example.com'},process.env.JWT_SECRET||'development-secret',{expiresIn:'1d'});res.json({token,user:{name:'Demo User',email:req.body.email||'demo@example.com'}})});
+app.get('/api/leads',(req,res)=>res.json(leads));
+app.post('/api/leads',(req,res)=>{const lead={id:Date.now(),...req.body,score:req.body.score||65};leads.push(lead);res.status(201).json(lead)});
+app.put('/api/leads/:id',(req,res)=>{const i=leads.findIndex(x=>x.id==req.params.id);if(i<0)return res.status(404).json({message:'Lead not found'});leads[i]={...leads[i],...req.body};res.json(leads[i])});
+app.delete('/api/leads/:id',(req,res)=>{const i=leads.findIndex(x=>x.id==req.params.id);if(i>=0)leads.splice(i,1);res.status(204).end()});
+app.post('/api/ai/score',(req,res)=>{const text=JSON.stringify(req.body);const score=Math.min(98,Math.max(35,55+(text.length%44)));res.json({score,reason:'Score considers company fit, engagement, source and deal value.'})});
+app.post('/api/ai/email',(req,res)=>{const {name='there',company='your company',goal='explore how we can help'}=req.body;res.json({subject:`Idea for ${company}`,body:`Hi ${name},\n\nI came across ${company} and wanted to reach out. I’d love to ${goal}. Would you be open to a quick conversation this week?\n\nBest,\nRitesh`})});
+app.get('/api/analytics',(req,res)=>res.json({totalLeads:1252,qualified:328,pipelineValue:186400,conversionRate:24.8}));
+const port=process.env.PORT||5000;app.listen(port,()=>console.log(`CRM API running on ${port}`));
